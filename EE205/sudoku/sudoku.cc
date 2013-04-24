@@ -38,6 +38,7 @@ main()
 					if(c == 'y' || c == 'Y')
 					{	a.clear();
 						a.make();
+						break;
 					}
 					else
 						playmore = false;
