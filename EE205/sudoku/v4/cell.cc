@@ -9,12 +9,22 @@
 /*							*/
 /********************************************************/
 
-Cell::Cell() : ncount(0), number(0), answer(0), fgiven(false), guessing(0)
+Cell::Cell() : ncount(0), number(0), answer(0), fgiven(false), protlevel(0)
 {
 
 	for(int i = 0; i < 10; i++)
 		possible[i] = true;
 
+}
+
+void Cell :: clear()
+{	ncount = 0;
+	number = 0;
+	answer = 0;
+	fgiven = false;
+	protlevel = 0;
+	for(int i = 0; i < 10; i++)
+		possible[i] = true;
 }
 
 void Cell :: resetposs()

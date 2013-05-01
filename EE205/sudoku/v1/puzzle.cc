@@ -1,8 +1,8 @@
-/* file: puzzle_v2.cc */
+/* file: puzzle_v1.cc */
 
 #include <curses.h>
 #include "puzzle.h"
-#include "cell.h"
+#include "cell_inl.h"
 #include <ncurses.h>
 #include <iostream>
 using namespace std;
@@ -12,7 +12,7 @@ using namespace std;
 /*	Constructors				*/
 /*						*/
 /************************************************/
-Puzzle :: Puzzle() : row(0), col(0), changed(true)
+Puzzle :: Puzzle() : row(0), col(0)
 {
 	wnd = initscr();
 
@@ -25,7 +25,7 @@ Puzzle :: Puzzle() : row(0), col(0), changed(true)
 	insstr("/*                                   */");
 	move(5,20);
 	deleteln();
-	insstr("/*          XTREME SUDOKU            */");
+	insstr("/*     Welcome to You Do Sudoku!     */");
 	move(6,20);
 	deleteln();
 	insstr("/*                                   */");
@@ -276,7 +276,6 @@ void Puzzle :: clear()
 	   {	cells[i][j].setanswer(0);
 		cells[i][j].hide();
 		cells[i][j].nclear();
-		cells[i][j].resetposs();
 		insert(' ', fakerow(i), fakecol(j));
 	   }
 }
@@ -284,73 +283,41 @@ void Puzzle :: clear()
 void Puzzle :: make()
 {	chtype number;
 
-	/* this is an easy puzzle that can be solved without guess mode */
-	/* puzzle 1 easy book */
-
 	int solution[9][9] = {
-	{3,0,1,0,7,9,0,2,5},
-	{0,0,0,6,0,0,4,1,7},
-	{0,0,0,0,1,5,3,0,0},
-	{0,9,0,0,4,7,0,0,2},
-	{0,0,4,3,0,8,0,7,0},
-	{0,8,0,9,6,0,5,3,0},
-	{7,0,5,0,9,6,0,4,8},
-	{2,1,0,5,0,0,7,0,6},
-	{0,4,0,7,0,1,2,5,0} };
+	{5,8,6,3,7,4,9,1,2},
+	{1,3,7,9,5,2,8,6,4},
+	{2,4,9,8,1,6,5,7,3},
+	{8,7,2,5,4,3,1,9,6},
+	{6,9,3,7,8,1,2,4,5},
+	{4,1,5,6,2,9,7,3,8},
+	{9,5,4,2,3,7,6,8,1},
+	{7,2,1,4,6,8,3,5,9},
+	{3,6,8,1,9,5,4,2,7} };
 
+	bool given[9][9] = {
+	{1,1,1,0,0,0,0,1,1},
+	{0,0,0,0,1,1,1,1,0},
+	{1,1,0,1,1,0,0,0,1},
+	{0,0,0,1,0,1,0,1,0},
+	{0,0,0,0,1,1,1,1,0},
+	{1,0,1,1,0,0,1,1,1},
+	{0,1,0,1,1,0,0,1,1},
+	{1,0,0,0,0,1,0,0,0},
+	{1,1,0,0,0,1,0,0,0} };
 
-	/* another easy puzzle */
-	/* puzzle 80 easy book */
-/*
-	int solution[9][9] = {
-	{5,4,0,0,0,0,0,0,0},
-	{0,0,0,7,0,0,0,0,0},
-	{0,0,0,0,0,1,0,5,6},
-	{0,7,0,0,0,0,0,3,0},
-	{0,0,1,0,0,9,0,0,2},
-	{8,0,5,0,0,0,0,0,0},
-	{4,9,0,0,0,5,0,8,0},
-	{0,3,2,9,0,0,4,7,0},
-	{0,0,0,6,0,0,0,0,9} };
-*/
-
-	/* this is a medium puzzle that we must use the guess mode to solve */
-	/* puzzle 40 medium book */
-/*
-	int solution[9][9] = {
-	{1,0,0,0,8,5,0,0,7},
-	{0,0,0,0,3,0,0,0,0},
-	{0,4,0,0,0,0,6,5,0},
-	{5,0,0,0,7,6,0,0,0},
-	{2,9,0,0,0,0,0,0,0},
-	{0,0,4,5,0,3,0,8,0},
-	{0,6,0,0,0,0,9,1,0},
-	{0,0,0,9,0,0,0,0,0},
-	{3,7,0,0,2,4,0,0,0} };
-*/
 	/* insert answer matrix into cells */
 	for(int i = 0; i < 9; i++)
 	   for(int j = 0; j < 9; j++)
 		cells[i][j].setanswer(solution[i][j]);
 
-   /* solve */
-   while(!CompleteSolution())
-   {
-	while(changed)
-	{ changed = false;
+	/* reveal given cells */
 	for(int i = 0; i < 9; i++)
 	   for(int j = 0; j < 9; j++)
-	   {
-		elimrow(i,j);
-		elimcol(i,j);
-		elimbox(i,j);
-	   }
-	}
-	if(!CompleteSolution())
-	{	message("Time to Guess");
-		break;
-	}
-   }
+		if(given[i][j])
+		{	cells[i][j].reveal();
+			number = inttochar(cells[i][j].getanswer()) | A_UNDERLINE;
+			insert(number, fakerow(i), fakecol(j));
+		}	
 }
 
 /************************************************/
@@ -366,6 +333,7 @@ void Puzzle :: drawrow(int i)
 
 	for(int n = 0 ; n < 64 ; n++)
 	{
+
 		move(i,col);
 		delch();
 
@@ -425,137 +393,3 @@ int Puzzle :: chtypetoint(chtype x)
 	ch = x & A_CHARTEXT;
 	return (int)ch-(int)'0';
 }
-
-int Puzzle :: findbox(const int x, const int y)const
-{
-	if(x < 3)	// row 1
-	{
-		if(y < 3)	// box 1
-		return 1;
-		else if(y > 5)	// box 3
-		return 3;
-		else 		// box 2
-		return 2;
-	}
-
-	else if(x > 5) 	// row 3
-	{
-		if(y < 3)	// box 7
-		return 7;
-		else if(y > 5)	// box 9
-		return 9;
-		else 		// box 8
-		return 8;
-	}
-
-	else		// row 2 
-	{
-		if(y < 3)	// box 4
-		return 4;
-		else if(y > 5)	// box 6
-		return 6;
-		else 		// box 5
-		return 5;
-	}
-
-}
-
-/************************************************/
-/*						*/
-/*	Puzzle Solving Functions		*/
-/*						*/
-/************************************************/
-
-void Puzzle :: elimrow(int x, int y)
-{
-	/* only eliminate if there isn't an answer in the cell */
-	if(!cells[x][y].getanswer())
-	/* eliminate all the possibilities by row */
-	for(int i = 0; i < 9; i++)	
-		if(cells[x][y].eliminate(cells[x][i].getanswer()))
-		changed = true;
-	
-}
-
-
-void Puzzle :: elimcol(int x, int y)
-{
-	/* only eliminate if there isn't an answer in the cell */
-	if(!cells[x][y].getanswer()) 
-	/* eliminate all the possibilities by column */
-	for(int i = 0; i < 9; i++)
-		if(cells[x][y].eliminate(cells[i][y].getanswer()))
-		changed = true;
-}
-
-void Puzzle :: elimbox(int x, int y)
-{
-	/* only eliminate if there isn't an answer in the cell */
-	if(!cells[x][y].getanswer()) 
-	/* eliminate all the possibilities by box */
-	switch(findbox(x, y))
-	{
-	case 1:
-		for(int i=0;i<3;i++) 
-		   for(int j=0;j<3;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
-	case 2:
-		for(int i=0;i<3;i++) 
-		   for(int j=3;j<6;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
-	case 3: 
-		for(int i=0;i<3;i++) 
-		   for(int j=6;j<9;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
-	case 4: 
-		for(int i=3;i<6;i++) 
-		   for(int j=0;j<3;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
-	case 5: 
-		for(int i=3;i<6;i++) 
-		   for(int j=3;j<6;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
-	case 6: 
-		for(int i=3;i<6;i++) 
-		   for(int j=6;j<9;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
-	case 7:
-		for(int i=6;i<9;i++) 
-		   for(int j=0;j<3;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
-	case 8:
-		for(int i=6;i<9;i++) 
-		   for(int j=3;j<6;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
-	case 9:
-		for(int i=6;i<9;i++) 
-		   for(int j=6;j<9;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer())) changed = true;
-	}
-}
-
-bool Puzzle :: CompleteSolution()const
-{
-
-	for(int i=0;i<9;i++) 
-	   for(int j=0;j<9;j++)
-		if(cells[i][j].getanswer() == 0)
-		return false;
-	return true;
-
-
-
-}
-
-
-
-
-

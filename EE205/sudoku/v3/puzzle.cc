@@ -12,7 +12,7 @@ using namespace std;
 /*	Constructors				*/
 /*						*/
 /************************************************/
-Puzzle :: Puzzle() : row(0), col(0), changed(true)
+Puzzle :: Puzzle() : row(0), col(0)
 {
 	wnd = initscr();
 
@@ -285,8 +285,7 @@ void Puzzle :: make()
 {	chtype number;
 
 	/* this is an easy puzzle that can be solved without guess mode */
-	/* puzzle 1 easy book */
-
+/*
 	int solution[9][9] = {
 	{3,0,1,0,7,9,0,2,5},
 	{0,0,0,6,0,0,4,1,7},
@@ -297,10 +296,8 @@ void Puzzle :: make()
 	{7,0,5,0,9,6,0,4,8},
 	{2,1,0,5,0,0,7,0,6},
 	{0,4,0,7,0,1,2,5,0} };
-
-
+*/
 	/* another easy puzzle */
-	/* puzzle 80 easy book */
 /*
 	int solution[9][9] = {
 	{5,4,0,0,0,0,0,0,0},
@@ -313,10 +310,7 @@ void Puzzle :: make()
 	{0,3,2,9,0,0,4,7,0},
 	{0,0,0,6,0,0,0,0,9} };
 */
-
 	/* this is a medium puzzle that we must use the guess mode to solve */
-	/* puzzle 40 medium book */
-/*
 	int solution[9][9] = {
 	{1,0,0,0,8,5,0,0,7},
 	{0,0,0,0,3,0,0,0,0},
@@ -327,7 +321,7 @@ void Puzzle :: make()
 	{0,6,0,0,0,0,9,1,0},
 	{0,0,0,9,0,0,0,0,0},
 	{3,7,0,0,2,4,0,0,0} };
-*/
+
 	/* insert answer matrix into cells */
 	for(int i = 0; i < 9; i++)
 	   for(int j = 0; j < 9; j++)
@@ -336,8 +330,6 @@ void Puzzle :: make()
    /* solve */
    while(!CompleteSolution())
    {
-	while(changed)
-	{ changed = false;
 	for(int i = 0; i < 9; i++)
 	   for(int j = 0; j < 9; j++)
 	   {
@@ -345,11 +337,6 @@ void Puzzle :: make()
 		elimcol(i,j);
 		elimbox(i,j);
 	   }
-	}
-	if(!CompleteSolution())
-	{	message("Time to Guess");
-		break;
-	}
    }
 }
 
@@ -366,6 +353,7 @@ void Puzzle :: drawrow(int i)
 
 	for(int n = 0 ; n < 64 ; n++)
 	{
+
 		move(i,col);
 		delch();
 
@@ -469,76 +457,68 @@ int Puzzle :: findbox(const int x, const int y)const
 void Puzzle :: elimrow(int x, int y)
 {
 	/* only eliminate if there isn't an answer in the cell */
-	if(!cells[x][y].getanswer())
+	if(cells[x][y].getanswer()) return;
+
 	/* eliminate all the possibilities by row */
-	for(int i = 0; i < 9; i++)	
-		if(cells[x][y].eliminate(cells[x][i].getanswer()))
-		changed = true;
-	
+	for(int i = 0; i < 9; i++)
+		cells[x][y].eliminate(cells[x][i].getanswer());
 }
 
 
 void Puzzle :: elimcol(int x, int y)
 {
 	/* only eliminate if there isn't an answer in the cell */
-	if(!cells[x][y].getanswer()) 
+	if(cells[x][y].getanswer()) return;
+	
 	/* eliminate all the possibilities by column */
 	for(int i = 0; i < 9; i++)
-		if(cells[x][y].eliminate(cells[i][y].getanswer()))
-		changed = true;
+		cells[x][y].eliminate(cells[i][y].getanswer());
 }
 
 void Puzzle :: elimbox(int x, int y)
 {
 	/* only eliminate if there isn't an answer in the cell */
-	if(!cells[x][y].getanswer()) 
+	if(cells[x][y].getanswer()) return;
+   
 	/* eliminate all the possibilities by box */
 	switch(findbox(x, y))
 	{
 	case 1:
 		for(int i=0;i<3;i++) 
 		   for(int j=0;j<3;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
+			cells[x][y].eliminate(cells[i][j].getanswer()); break;
 	case 2:
 		for(int i=0;i<3;i++) 
 		   for(int j=3;j<6;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
+			cells[x][y].eliminate(cells[i][j].getanswer()); break;
 	case 3: 
 		for(int i=0;i<3;i++) 
 		   for(int j=6;j<9;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
+			cells[x][y].eliminate(cells[i][j].getanswer()); break;
 	case 4: 
 		for(int i=3;i<6;i++) 
 		   for(int j=0;j<3;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
+			cells[x][y].eliminate(cells[i][j].getanswer()); break;
 	case 5: 
 		for(int i=3;i<6;i++) 
 		   for(int j=3;j<6;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
+			cells[x][y].eliminate(cells[i][j].getanswer()); break;
 	case 6: 
 		for(int i=3;i<6;i++) 
 		   for(int j=6;j<9;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
+			cells[x][y].eliminate(cells[i][j].getanswer()); break;
 	case 7:
 		for(int i=6;i<9;i++) 
 		   for(int j=0;j<3;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
+			cells[x][y].eliminate(cells[i][j].getanswer()); break;
 	case 8:
 		for(int i=6;i<9;i++) 
 		   for(int j=3;j<6;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer()))changed = true;
-		break;
+			cells[x][y].eliminate(cells[i][j].getanswer()); break;
 	case 9:
 		for(int i=6;i<9;i++) 
 		   for(int j=6;j<9;j++)
-			if(cells[x][y].eliminate(cells[i][j].getanswer())) changed = true;
+			cells[x][y].eliminate(cells[i][j].getanswer()); break;
 	}
 }
 

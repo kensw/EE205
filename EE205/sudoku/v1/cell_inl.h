@@ -1,4 +1,5 @@
-/* FILE: cell_inl_v2.h */
+/* file: cell_inl_v1.h */
+
 #include "cell.h"
 
 /********************************************************/
@@ -49,9 +50,3 @@ inline bool Cell :: iscorrect() const
 
 inline int Cell :: getnumber() const
 {	return number;	}
-
-inline bool Cell :: possibility(const int x) const
-{
-	return possible[x];
-}
-

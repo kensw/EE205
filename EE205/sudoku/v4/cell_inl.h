@@ -1,4 +1,4 @@
-/* FILE: cell_inl_v2.h */
+/* file: cell_inl_v2.h */
 #include "cell.h"
 
 /********************************************************/
@@ -28,6 +28,10 @@ inline void Cell :: reveal()
 {	number = answer;
 	fgiven = true;
 }
+inline void Cell :: setlevel(const int x)
+{
+	protlevel = x;
+}
 
 /********************************************************/
 /*							*/
@@ -54,4 +58,8 @@ inline bool Cell :: possibility(const int x) const
 {
 	return possible[x];
 }
+inline int Cell ::  getlevel() const
+{
+	return protlevel;
 
+}

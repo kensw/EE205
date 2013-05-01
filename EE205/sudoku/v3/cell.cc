@@ -9,7 +9,7 @@
 /*							*/
 /********************************************************/
 
-Cell::Cell() : ncount(0), number(0), answer(0), fgiven(false), guessing(0)
+Cell::Cell() : ncount(0), number(0), answer(0), fgiven(false)
 {
 
 	for(int i = 0; i < 10; i++)
@@ -22,11 +22,8 @@ void Cell :: resetposs()
 		possible[i] = true;
 }
 
-bool Cell::eliminate(const int x)
+void Cell::eliminate(const int x)
 {
-	if(!possible[x])
-	return false;
-	
 	possible[x] = false;
 
 	for(int i = 1 ; i < 10 ; i++)	
@@ -34,7 +31,6 @@ bool Cell::eliminate(const int x)
 		if(probability(i) == 1)
 		setanswer(i);
 	}
-	return true;
 }
 
 float Cell :: probability(const int x) const

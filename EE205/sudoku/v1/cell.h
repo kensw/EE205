@@ -1,9 +1,10 @@
-/* file: cell_v2.h */
+/* file: cell_v1.h */
 
 #ifndef CELL_H
 #define CELL_H
 
 #define BLANK 0
+
 
 class Cell
 {
@@ -19,9 +20,6 @@ void hide();	// sets the cell to be initially blank
 void setanswer(int x);	// sets the answer for the cell
 void setnumber(int x);	// sets number of the cell (user input)
 void reveal();	// sets the cell to be initially given
-void resetposs(); // resets all the possibilities to be true
-bool eliminate(const int x); // true if it eliminates x from possible solutions
-
 
 /* accessor */
 int getncount() const;	// returns note count
@@ -29,8 +27,7 @@ bool isgiven() const;	// returns true if the cell contains a given number
 int getanswer() const;	// returns the answer
 bool iscorrect() const;	// returns true if the inserted number is correct
 int getnumber() const; // return the current number in the cell
-bool possibility(const int x) const; // returns true if x is a possibility
-float probability(const int x) const; // returns probability of x being a solution
+
 
 private:
 
@@ -38,11 +35,9 @@ int ncount; //counts the number of notes currently in the cell
 int number; //Current number in that cell
 int answer; //Number that is "supposed" to be in that cell (solution)
 bool fgiven; //flag for if the number is a given or not
-bool possible[10]; // possible answers for cell
-int guessing; // 0 = untested , 1 = killed , 2 = up , 3 = down
+
 
 };
 
-#include "cell_inl.h"
 
 #endif

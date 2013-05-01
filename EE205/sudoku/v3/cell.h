@@ -20,7 +20,7 @@ void setanswer(int x);	// sets the answer for the cell
 void setnumber(int x);	// sets number of the cell (user input)
 void reveal();	// sets the cell to be initially given
 void resetposs(); // resets all the possibilities to be true
-bool eliminate(const int x); // true if it eliminates x from possible solutions
+void eliminate(const int x); // eliminates x from possible solutions
 
 
 /* accessor */
@@ -39,7 +39,7 @@ int number; //Current number in that cell
 int answer; //Number that is "supposed" to be in that cell (solution)
 bool fgiven; //flag for if the number is a given or not
 bool possible[10]; // possible answers for cell
-int guessing; // 0 = untested , 1 = killed , 2 = up , 3 = down
+
 
 };
 

@@ -12,7 +12,7 @@ using namespace std;
 /*	Constructors				*/
 /*						*/
 /************************************************/
-Puzzle :: Puzzle() : row(0), col(0), changed(true)
+Puzzle :: Puzzle() : row(0), col(0), changed(true), protlevel(1)
 {
 	wnd = initscr();
 
@@ -273,20 +273,20 @@ void Puzzle :: clear()
 {
 	for(int i = 0; i < 9; i++)
 	   for(int j = 0; j < 9; j++)
-	   {	cells[i][j].setanswer(0);
-		cells[i][j].hide();
-		cells[i][j].nclear();
-		cells[i][j].resetposs();
+	   {	cells[i][j].clear();
 		insert(' ', fakerow(i), fakecol(j));
 	   }
+		changed = true;
+		protlevel = 1;	
 }
 
 void Puzzle :: make()
 {	chtype number;
-
+	int x, y;
+	int guessrow, guesscol;
 	/* this is an easy puzzle that can be solved without guess mode */
 	/* puzzle 1 easy book */
-
+/*
 	int solution[9][9] = {
 	{3,0,1,0,7,9,0,2,5},
 	{0,0,0,6,0,0,4,1,7},
@@ -297,7 +297,7 @@ void Puzzle :: make()
 	{7,0,5,0,9,6,0,4,8},
 	{2,1,0,5,0,0,7,0,6},
 	{0,4,0,7,0,1,2,5,0} };
-
+*/
 
 	/* another easy puzzle */
 	/* puzzle 80 easy book */
@@ -313,10 +313,9 @@ void Puzzle :: make()
 	{0,3,2,9,0,0,4,7,0},
 	{0,0,0,6,0,0,0,0,9} };
 */
-
 	/* this is a medium puzzle that we must use the guess mode to solve */
 	/* puzzle 40 medium book */
-/*
+
 	int solution[9][9] = {
 	{1,0,0,0,8,5,0,0,7},
 	{0,0,0,0,3,0,0,0,0},
@@ -327,15 +326,33 @@ void Puzzle :: make()
 	{0,6,0,0,0,0,9,1,0},
 	{0,0,0,9,0,0,0,0,0},
 	{3,7,0,0,2,4,0,0,0} };
+
+	/* solution with correct rows and cols , incorrect boxes */
+/*
+	int solution[9][9] = {
+	{1,2,3,4,5,6,7,8,9},
+	{9,1,2,3,4,5,6,7,8},
+	{8,9,1,2,3,4,5,6,7},
+	{7,8,9,1,2,3,4,5,6},
+	{6,7,8,9,1,2,3,4,5},
+	{5,6,7,8,9,1,2,3,4},
+	{4,5,6,7,8,9,1,2,3},
+	{3,4,5,6,7,8,9,1,2},
+	{2,3,4,5,6,7,8,9,1}  };
 */
 	/* insert answer matrix into cells */
 	for(int i = 0; i < 9; i++)
 	   for(int j = 0; j < 9; j++)
+		{
 		cells[i][j].setanswer(solution[i][j]);
-
+		cells[i][j].setlevel(protlevel);
+		}
    /* solve */
+while(!CorrectSolution())
    while(!CompleteSolution())
    {
+   	/*Solving with Smart Logic */
+	changed = true;
 	while(changed)
 	{ changed = false;
 	for(int i = 0; i < 9; i++)
@@ -346,11 +363,59 @@ void Puzzle :: make()
 		elimbox(i,j);
 	   }
 	}
+
+	/* apply current protection level to filled in cells */
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+	   {
+		if(cells[i][j].getanswer() && !cells[i][j].getlevel())
+			cells[i][j].setlevel(protlevel);
+	   }
+	
+
+	/* Guessing algorithm */
 	if(!CompleteSolution())
-	{	message("Time to Guess");
-		break;
+	{	
+		protlevel++;
+		guess();
 	}
    }
+
+	/* check if puzzle is correct */
+	if(CorrectSolution())
+   		message("Yea boi");
+	if(!CorrectSolution())
+	{
+		message("Shit");
+
+	/* pick the next guess */
+	do {
+	/* go to the latest guess and eliminate that guess from possibilites */	
+		for(x = 0; x < 9; x++)
+		   for(y = 0; y < 9; y++)
+		   {
+			if(cells[x][y].getnumber() && cells[x][y].getlevel() == protlevel)
+			{
+				cells[x][y].eliminate(cells[x][y].getnumber());
+				cells[x][y].setlevel(0); 
+				guessrow = x;
+				guesscol = y;
+				break;
+			}
+		   }
+
+	
+	/* clear all cells that resulted from incorrect guess */
+		for(int i = 0; i < 9; i++)
+		   for(int j = 0; j < 9; j++)
+		   {
+			if(cells[i][j].getlevel() == protlevel)
+			cells[i][j].clear();
+		   }
+	} while(!guess(guessrow, guesscol, cells[guessrow][guesscol].getnumber()));
+
+	}
+
 }
 
 /************************************************/
@@ -366,6 +431,7 @@ void Puzzle :: drawrow(int i)
 
 	for(int n = 0 ; n < 64 ; n++)
 	{
+
 		move(i,col);
 		delch();
 
@@ -555,7 +621,171 @@ bool Puzzle :: CompleteSolution()const
 
 }
 
+bool Puzzle :: CorrectSolution() const
+{	if(!CompleteSolution()) return false;
+	
+	int count = 0;
+	/* check rows */
+	for(int i = 0; i < 9; i++)
+	   for(int n = 1; n < 10; n++)
+	   {	for(int j = 0; j < 9; j++)
+		{	if(cells[i][j].getanswer() == n)
+				count++;
+		}
 
+		/* there can be only one */
+		if(count != 1) return false;
+		else count = 0;
+	   }
 
+	/* check columns */
+	for(int j = 0; j < 9; j++)
+	   for(int n = 1; n < 10; n++)
+	   {	for(int i = 0; i < 9; i++)
+		{	if(cells[i][j].getanswer() == n)
+				count++;
+		}
 
+		/* there can be only one */
+		if(count != 1) return false;
+		else count = 0;
+	   }
 
+	/* check boxes */
+/* check box 1 */
+     for(int n = 1; n < 10; n++)
+     {  for(int i=0;i<3;i++) 
+	  for(int j=0;j<3;j++)
+		{	if(cells[i][j].getanswer() == n)
+				count++;
+		}
+		/* there can be only one */
+		if(count != 1) return false;
+		else count = 0;
+	}
+/* check box 2 */
+     for(int n = 1; n < 10; n++)
+     {  for(int i=0;i<3;i++) 
+	   for(int j=3;j<6;j++)
+		{	if(cells[i][j].getanswer() == n)
+				count++;
+		}
+		/* there can be only one */
+		if(count != 1) return false;
+		else count = 0;
+	}
+/* check box 3 */
+     for(int n = 1; n < 10; n++)
+     {  for(int i=0;i<3;i++) 
+	   for(int j=6;j<9;j++)
+		{	if(cells[i][j].getanswer() == n)
+				count++;
+		}
+		/* there can be only one */
+		if(count != 1) return false;
+		else count = 0;
+	}
+/* check box 4 */
+     for(int n = 1; n < 10; n++)
+     {  for(int i=3;i<6;i++) 
+	   for(int j=0;j<3;j++)
+		{	if(cells[i][j].getanswer() == n)
+				count++;
+		}
+		/* there can be only one */
+		if(count != 1) return false;
+		else count = 0;
+	}
+/* check box 5 */
+     for(int n = 1; n < 10; n++)
+     {  for(int i=3;i<6;i++) 
+	   for(int j=3;j<6;j++)
+		{	if(cells[i][j].getanswer() == n)
+				count++;
+		}
+		/* there can be only one */
+		if(count != 1) return false;
+		else count = 0;
+	}
+/* check box 6 */
+     for(int n = 1; n < 10; n++)
+     {  for(int i=3;i<6;i++) 
+	   for(int j=6;j<9;j++)
+		{	if(cells[i][j].getanswer() == n)
+				count++;
+		}
+		/* there can be only one */
+		if(count != 1) return false;
+		else count = 0;
+	}
+/* check box 7 */
+     for(int n = 1; n < 10; n++)
+     {  for(int i=6;i<9;i++) 
+	   for(int j=0;j<3;j++)
+		{	if(cells[i][j].getanswer() == n)
+				count++;
+		}
+		/* there can be only one */
+		if(count != 1) return false;
+		else count = 0;
+	}
+/* check box 8 */
+     for(int n = 1; n < 10; n++)
+     {  for(int i=6;i<9;i++) 
+	   for(int j=3;j<6;j++)
+		{	if(cells[i][j].getanswer() == n)
+				count++;
+		}
+		/* there can be only one */
+		if(count != 1) return false;
+		else count = 0;
+	}
+/* check box 9 */
+     for(int n = 1; n < 10; n++)
+     {  for(int i=6;i<9;i++) 
+	   for(int j=6;j<9;j++)
+		{	if(cells[i][j].getanswer() == n)
+				count++;
+		}
+		/* there can be only one */
+		if(count != 1) return false;
+		else count = 0;
+	}
+	
+	return true;
+}
+
+void Puzzle :: guess()
+{
+	int x;
+     for(float n=1.0;n<10;n++)
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+		if(!cells[i][j].getanswer())
+		{
+			for(x=1;x<10;x++)
+				if(cells[i][j].probability(x) == 1.0/n)
+				{
+					cells[i][j].setanswer(x); /* assume guess is the answer */
+					cells[i][j].setnumber(x); /* save the guess in the number data field */
+					cells[i][j].setlevel(protlevel);
+					return;
+				}
+		}
+}
+
+bool Puzzle :: guess(const int x, const int y, const int prevguess)
+{
+	for(int n=prevguess;n<10;n++)
+		if(cells[x][y].probability(n))
+		{
+			cells[x][y].setanswer(n); /* assume guess is the answer */
+			cells[x][y].setnumber(n); /* save the guess in the number data field */
+			cells[x][y].setlevel(protlevel);
+			return true;
+		}
+
+	protlevel--;
+	return false;
+
+}
