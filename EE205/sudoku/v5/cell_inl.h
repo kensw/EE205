@@ -30,6 +30,9 @@ inline void Cell :: setlevel(const int x)
 	protlevel = x;
 }
 
+inline void Cell :: setgiven(const bool given)
+{	fgiven = given;	}
+
 /********************************************************/
 /*							*/
 /*	Accessors	`				*/

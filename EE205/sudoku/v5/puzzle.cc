@@ -1,4 +1,4 @@
-/* file: puzzle_v2.cc */
+/* file: puzzle_v5.cc */
 
 #include <curses.h>
 #include "puzzle.h"
@@ -6,6 +6,12 @@
 #include <ncurses.h>
 #include <iostream>
 using namespace std;
+
+#include <cstdlib>
+using std::rand;
+#include<sys/time.h>
+
+//#define FONT
 
 /************************************************/
 /*						*/
@@ -140,7 +146,11 @@ void Puzzle :: insert(chtype c, int x, int y)
 void Puzzle :: insertnote(char c)
 {
 	chtype ch;
-	ch = c | A_BOLD;
+	ch = c
+#ifdef FONT
+| A_BOLD
+#endif
+;
 
 	/* clears all notes */
 	if(c == 8)
@@ -172,11 +182,24 @@ void Puzzle :: insertnote(char c)
 
 }
 
+void Puzzle :: insertnote(char c, int x, int y)
+{
+	move(x,y);
+	refresh();
+	insertnote(c);
+
+}
+
+
 void Puzzle :: hint()
 {	chtype ans;
 
 	/* get the answer */
-	ans = inttochar(cells[realrow(row)][realcol(col)].getanswer()) | A_STANDOUT;
+	ans = inttochar(cells[realrow(row)][realcol(col)].getanswer())
+#ifdef FONT
+| A_STANDOUT
+#endif
+;
 
 	/* show it */
 	insert(ans);
@@ -189,7 +212,6 @@ void Puzzle :: giveup()
 {	chtype guess;
 	for(int i = 0; i < 9; i++)
 	   for(int j = 0; j < 9; j++)
-	   	if(!cells[i][j].isgiven())
 			insert(inttochar(cells[i][j].getanswer()), fakerow(i), fakecol(j));
 }
 
@@ -200,7 +222,11 @@ bool Puzzle :: submit()
 	for(int i = 0; i < 9; i++)
 	   for(int j = 0; j < 9; j++)
 		if(!cells[i][j].iscorrect())
-		{	num = inttochar(cells[i][j].getnumber()) | A_REVERSE;
+		{	num = inttochar(cells[i][j].getnumber())
+#ifdef FONT
+| A_REVERSE
+#endif
+;
 			insert(num, fakerow(i), fakecol(j));
 			correct = false;
 		}
@@ -306,7 +332,6 @@ void Puzzle :: showprotlevel(const int x, const int y)
 }
 
 
-
 /************************************************/
 /*						*/
 /*	Puzzle Initialization functions		*/
@@ -321,13 +346,25 @@ void Puzzle :: clear()
 		insert(' ', fakerow(i), fakecol(j));
 	   }
 		changed = true;
-		protlevel = 1;	
+		protlevel = 0;	
 }
 
 void Puzzle :: make()
-{	chtype number;
+{
 	int x, y;
-	int guessrow, guesscol;
+	chtype number;
+
+	bool given[9][9]= {
+	{1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1},
+	{1,1,1,1,1,1,1,1,1} };	
+
 	/* this is an easy puzzle that can be solved without guess mode */
 	/* puzzle 1 easy book */
 /*
@@ -456,6 +493,14 @@ void Puzzle :: make()
 	{0,0,0,0,0,0,0,0,0} };
 
 
+	/* insert 1-9 in 9 random positions in blank puzzle */
+
+timeval seed;
+gettimeofday(&seed, NULL);
+srand(seed.tv_usec);
+
+	for(int i = 1; i < 10 ; i++)
+		solution[rand()%9][rand()%9] = i;
 
 	/* insert answer matrix into cells */
 	for(int i = 0; i < 9; i++)
@@ -464,67 +509,53 @@ void Puzzle :: make()
 		cells[i][j].setanswer(solution[i][j]);
 		cells[i][j].setlevel(protlevel);
 		}
+
    /* solve */
-while(!CorrectSolution())
-{   while(!CompleteSolution())
-   {
-   	/*Solving with Smart Logic */
-		do{
-		 changed = false;
-		for(int i = 0; i < 9; i++)
-		   for(int j = 0; j < 9; j++)
-		   {
-			elimrow(i,j);
-			elimcol(i,j);
-			elimbox(i,j);
-			checkneighbors(i,j);
-		   }
-		}while(changed);	
+   solve();
 
-	/* Guessing algorithm */
-	if(!CompleteSolution())
-	{	
-		protlevel++;
-		guess();
-	}
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+		solution[i][j] = cells[i][j].getanswer();
+
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+		upsolution[i][j] = cells[i][j].getanswer();
 	
-   }
-	/* check if puzzle is correct */
-	if(CorrectSolution())
-   		message("Yea boi");
-	if(!CorrectSolution() && CompleteSolution())
-	{
-		message("Shit");
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+		downsolution[i][j] = cells[i][j].getanswer();
 
-	/* pick the next guess */
-	do {
 
-	/* go to the latest guess and eliminate that guess from possibilites */	
-		for(x = 0; x < 9; x++)
-		   for(y = 0; y < 9; y++)
-		   {
-			if(cells[x][y].getnumber() && cells[x][y].getlevel() == protlevel)
-			{
-				cells[x][y].eliminate(cells[x][y].getnumber()); // eliminate guess from possibles
-				cells[x][y].setlevel(0);
-				guessrow = x;
-				guesscol = y;
-				break;
-			}
-		   }
-
-	/* clear all cells that resulted from incorrect guess */
-		for(int i = 0; i < 9; i++)
-		   for(int j = 0; j < 9; j++)
-		   {
-			if(cells[i][j].getlevel() >= protlevel)
-			cells[i][j].clear();
-		   }
-	
-	
-	}while(!guess(guessrow, guesscol, cells[guessrow][guesscol].getnumber()));
-	}
+for(int count = 0; count < 20; count ++)
+{	x = rand()%9;
+	y = rand()%9;
+	given[x][y] = false;
+	upsolution[x][y] = 0;	
+	downsolution[x][y] = 0;
 }
+
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+		{
+			cells[i][j].setanswer(solution[i][j]);
+
+			if(given[i][j])
+			{	cells[i][j].reveal();
+				
+				number = inttochar(cells[i][j].getanswer())
+#ifdef FONT
+| A_UNDERLINE
+#endif
+; 
+				insert(number, fakerow(i), fakecol(j));
+			}
+		}
+/*
+if(onesolution())
+	message("AGREE");
+else
+	message("DON'T AGREE");
+*/
 }
 
 /************************************************/
@@ -534,7 +565,11 @@ while(!CorrectSolution())
 /************************************************/
 void Puzzle :: drawrow(int i)
 {	
-	chtype bold = ' ' | A_REVERSE;
+	chtype bold = ' '
+#ifdef FONT
+| A_REVERSE
+#endif
+;
 	chtype line = '|';
 	chtype space = ' ';
 
@@ -556,7 +591,11 @@ void Puzzle :: drawrow(int i)
 
 void Puzzle :: drawhor(int i)
 {	
-	chtype bold = ' ' | A_REVERSE;
+	chtype bold = ' '
+#ifdef FONT
+| A_REVERSE
+#endif
+;
 	chtype line = '|';
 	chtype hor = '_';
 
@@ -577,14 +616,18 @@ void Puzzle :: drawhor(int i)
 
 void Puzzle:: drawbold(int i)
 {
-	chtype dc = ' ' | A_REVERSE;
+	chtype dc = ' '
+#ifdef FONT
+| A_REVERSE
+#endif
+;
 
 	for(int n = 0 ; n < 64 ; n++)
 	{	
 		move(i,col);
 		delch();	
 
-					insch(dc);
+		insch(dc);
 
 		refresh();
 		col++;
@@ -641,6 +684,81 @@ int Puzzle :: findbox(const int x, const int y)const
 /*						*/
 /************************************************/
 
+void Puzzle :: solve(const bool forward)
+{
+	int x, y;
+	int guessrow, guesscol;
+
+while(!CorrectSolution())
+{   while(!CompleteSolution())
+   {
+   	/*Solving with Smart Logic */
+		do{
+		 changed = false;
+		for(int i = 0; i < 9; i++)
+		   for(int j = 0; j < 9; j++)
+		   {
+			elimrow(i,j);
+			elimcol(i,j);
+			elimbox(i,j);
+			checkneighbors(i,j);
+		   }
+		}while(changed);	
+
+	/* Guessing algorithm */
+	if(!CompleteSolution())
+	{	
+		protlevel++;
+		guess(forward);
+	}
+	
+   }
+	/* check if puzzle is correct */
+	if(CorrectSolution())
+   		message("Yea boi");
+	if(!CorrectSolution() && CompleteSolution())
+	{
+		message("Shit");
+
+	/* pick the next guess */
+	do {
+
+	/* go to the latest guess and eliminate that guess from possibilites */	
+		for(x = 0; x < 9; x++)
+		   for(y = 0; y < 9; y++)
+		   {
+			if(cells[x][y].getnumber() && cells[x][y].getlevel() == protlevel)
+			{
+				cells[x][y].eliminate(cells[x][y].getnumber()); // eliminate guess from possibles
+				cells[x][y].setlevel(0);
+				guessrow = x;
+				guesscol = y;
+				break;
+			}
+		   }
+
+	/* clear all cells that resulted from incorrect guess */
+		for(int i = 0; i < 9; i++)
+		   for(int j = 0; j < 9; j++)
+		   {
+			if(cells[i][j].getlevel() >= protlevel)
+			cells[i][j].clear();
+		   }
+	
+	
+	}while(!guess(guessrow, guesscol, cells[guessrow][guesscol].getnumber(), forward));
+	}
+}
+	/* clear guess history */
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+		{   cells[i][j].setnumber(0);
+		    cells[i][j].setlevel(0);
+		}
+
+	protlevel = 0;
+
+}
 void Puzzle :: elimrow(int x, int y)
 {
 	/* only eliminate if there isn't an answer in the cell */
@@ -1023,10 +1141,11 @@ bool Puzzle :: CorrectSolution() const
 	return true;
 }
 
-void Puzzle :: guess()
+void Puzzle :: guess(const bool forward)
 {
 	int x;
-     for(float denom=2.0;denom<10;denom++)
+if(forward)
+{     for(float denom=2.0;denom<10;denom++)
 	for(int i = 0; i < 9; i++)
 	   for(int j = 0; j < 9; j++)
 		if(!cells[i][j].getanswer())
@@ -1042,11 +1161,39 @@ void Puzzle :: guess()
 		}
 }
 
-bool Puzzle :: guess(const int x, const int y, const int prevguess)
+else
+{     for(float denom=2.0;denom<10;denom++)
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+		if(!cells[i][j].getanswer())
+		{
+			for(x=9;x>0;x--)
+				if(cells[i][j].probability(x) == 1.0/denom)
+				{
+					cells[i][j].setanswer(x); /* assume guess is the answer */
+					cells[i][j].setnumber(x); /* save the guess in the number data field */
+					cells[i][j].setlevel(protlevel);
+					return;
+				}
+		}
+}
+}
+
+bool Puzzle :: guess(const int x, const int y, const int prevguess, const bool forward)
 {
 	cells[x][y].setlevel(protlevel);
 
+if(forward)
 	for(int n=prevguess+1;n<10;n++)
+		if(cells[x][y].probability(n))
+		{
+			cells[x][y].setanswer(n); /* assume guess is the answer */
+			cells[x][y].setnumber(n); /* save the guess in the number data field */
+			return true;
+		}
+
+else
+	for(int n=prevguess-1;n>0;n--)
 		if(cells[x][y].probability(n))
 		{
 			cells[x][y].setanswer(n); /* assume guess is the answer */
@@ -1056,4 +1203,37 @@ bool Puzzle :: guess(const int x, const int y, const int prevguess)
 
 	protlevel--;
 	return false;
+}
+   
+
+bool Puzzle :: onesolution()
+{
+
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+		cells[i][j].setanswer(upsolution[i][j]);
+solve(true);	
+	
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+		upsolution[i][j] = cells[i][j].getanswer();
+clear();
+
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+		cells[i][j].setanswer(downsolution[i][j]);
+
+solve(false);
+	
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+		downsolution[i][j] = cells[i][j].getanswer();
+	
+	for(int i = 0; i < 9; i++)
+	   for(int j = 0; j < 9; j++)
+	   {	if(upsolution[i][i] != downsolution[i][j])
+			return false;
+		else
+			return true;
+	   }
 }

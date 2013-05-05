@@ -23,6 +23,7 @@ void reveal();	// sets the cell to be initially given
 void resetposs(); // resets all the possibilities to be true
 bool eliminate(const int x); // true if it eliminates x from possible solutions
 void setlevel(const int x); // Sets the protection level (Guessing algorithm)
+void setgiven(const bool given);  // sets the cell to be given or not
 
 
 
